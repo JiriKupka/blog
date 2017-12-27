@@ -1,0 +1,127 @@
+<html>
+
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+		<script src="plot.js"></script>
+		<script src="math.js"></script>
+
+		<script>
+
+		window.addEventListener("load", function() {
+
+			var HoughWidget = function() {
+				this.points = [];
+
+				this.pointSpace = new Plot("#point-space", {
+					width: 400,
+					height: 400,
+					settings: {
+						axisX: [0, 400],
+						axisY: [0, 400],
+						axisStepX: 40,
+						axisStepY: 40,
+						drawMiddleCross: false,
+						axisTitleX: "x",
+						axisTitleY: "y",
+						title: "Prostor bodů"
+					}
+				});
+
+				this.houghSpace = new Plot("#hough-space", {
+					width: 540,
+					height: 400,
+					settings: {
+						axisX: [0, 180],
+						axisY: [0, 560],
+						axisStepX: 20,
+						axisStepY: 40,
+						drawMiddleCross: true,
+						axisTitleX: "Θ",
+						axisTitleY: "r",
+						title: "Houghův prostor"
+					}
+				});
+
+				this.reset = document.querySelector("#reset-button");
+			}
+
+
+			HoughWidget.prototype._y = function(x, r, theta) {
+				var t = math.deg2rad(theta);
+				return r/Math.sin(t) - (x*Math.cos(t))/Math.sin(t);
+			}
+
+
+			HoughWidget.prototype._r = function(x, y, theta) {
+				var t = math.deg2rad(theta);
+				return x*Math.cos(t)+y*Math.sin(t);
+			}
+
+
+			HoughWidget.prototype.drawWave = function(point) {
+				for(var t = 0; t < 180; t+=0.1) {
+					var r = this._r(point[0], point[1], t);
+					this.houghSpace.setPixel([t, r], [100, 0, 255, 200]);
+				}
+			}
+
+
+			HoughWidget.prototype.redraw = function() {
+				this.pointSpace.redraw();
+
+				for(var i in this.points) {
+					var point = this.points[i];
+					this.pointSpace.drawPoint(point, null, 1);
+				}
+
+			}
+
+			HoughWidget.prototype.run = function() {
+				var _this = this;
+
+				this.houghSpace.onMouseMove(function(e) {
+					_this.redraw();
+					_this.pointSpace.drawLine([0, _this._y(0, e.y, e.x)], [400,_this._y(400, e.y, e.x)], "#f99");
+				});
+
+				this.pointSpace.onClick(function(e) {
+					var point = [e.x, e.y];
+					_this.points.push(point);
+					_this.redraw();
+					_this.drawWave(point);
+				});
+
+				this.reset.addEventListener("click", function() {
+					_this.points = [];
+					_this.redraw();
+					_this.houghSpace.redraw();
+				});
+			}
+
+			var hw = new HoughWidget();
+			hw.run();
+		});
+
+		</script>
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-12">
+					<div id="point-space" style="display: inline-block"></div>
+					<div id="hough-space" style="display: inline-block"></div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-12">
+					<div class="well well-sm" style="margin-top: 15px;">
+						<button class="btn btn-primary" id="reset-button">Resetovat</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+
+</html>
